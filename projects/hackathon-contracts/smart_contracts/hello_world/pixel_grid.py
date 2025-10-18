@@ -1,5 +1,13 @@
 import tkinter as tk
 from tkinter import colorchooser
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,  # or DEBUG for more detail
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+
 
 class PixelGrid(tk.Tk):
     def __init__(self, rows=16, cols=16, pixel_size=25):
@@ -79,6 +87,10 @@ class PixelGrid(tk.Tk):
                 if color:
                     self.pixels[(row, col)].config(bg=color)
                     self.colored_pixels[(row, col)] = color
+                    logger.info(
+                        f"Populating row: {row} and col: {col}. "
+                        f"All pixels = {self.colored_pixels}"
+                    )
 
     def toggle_confirm(self):
         if self.mode == "selecting":
