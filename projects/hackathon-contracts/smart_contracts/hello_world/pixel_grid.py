@@ -10,12 +10,11 @@ class PixelGrid(tk.Tk):
         self.pixel_size = pixel_size
 
         # State
-        self.selection_enabled = False
-        self.color_enabled = False
-        self.selected_pixels = set()  # set of (row, col) tuples
+        self.mode = "idle"  # can be "idle", "selecting", or "coloring"
+        self.selected_pixels = set()
+        self.colored_pixels = {}  # {(r,c): color}
 
         self.pixels = {}  # {(row,col): frame}
-
         self.create_ui()
         self.create_grid()
 
@@ -33,7 +32,7 @@ class PixelGrid(tk.Tk):
         self.bottom_frame.pack(pady=10)
         self.selection_label = tk.Label(self.bottom_frame, text="")
         self.selection_label.pack(side=tk.LEFT)
-        self.confirm_button = tk.Button(self.bottom_frame, text="Confirm selection", command=self.confirm_selection)
+        self.confirm_button = tk.Button(self.bottom_frame, text="Confirm selection", command=self.toggle_confirm)
         self.confirm_button.pack(side=tk.LEFT, padx=10)
         self.confirm_button.config(state="disabled")
 
@@ -53,37 +52,59 @@ class PixelGrid(tk.Tk):
                 self.pixels[(r, c)] = frame
 
     def enable_selection(self):
-        self.selection_enabled = True
-        self.participate_button.config(state="disabled")
-        self.selection_label.config(text="Select pixels you want")
-        self.confirm_button.config(state="normal")
+        if self.mode == "idle":
+            self.mode = "selecting"
+            self.participate_button.config(state="disabled")
+            self.confirm_button.config(state="normal")
+            self.selection_label.config(text="Select pixels you want")
+            self.selected_pixels.clear()
 
     def on_pixel_click(self, row, col):
-        if self.selection_enabled and not self.color_enabled:
-            # selection mode
+        if self.mode == "selecting":
+            # selecting pixels
             if (row, col) not in self.selected_pixels:
                 self.selected_pixels.add((row, col))
                 self.pixels[(row, col)].config(bg="lightblue")
             else:
                 self.selected_pixels.remove((row, col))
-                self.pixels[(row, col)].config(bg="white")
+                # restore color if it was previously colored, else white
+                prev_color = self.colored_pixels.get((row, col), "white")
+                self.pixels[(row, col)].config(bg=prev_color)
             self.selection_label.config(text=f"Selected pixels: {len(self.selected_pixels)}")
 
-        elif self.color_enabled:
-            # coloring mode
+        elif self.mode == "coloring":
+            # coloring mode: only selected pixels are clickable
             if (row, col) in self.selected_pixels:
                 color = colorchooser.askcolor(title="Choose color")[1]
                 if color:
                     self.pixels[(row, col)].config(bg=color)
+                    self.colored_pixels[(row, col)] = color
 
-    def confirm_selection(self):
-        if len(self.selected_pixels) == 0:
-            self.selection_label.config(text="Select at least one pixel before confirming.")
-            return
-        self.selection_enabled = False
-        self.color_enabled = True
-        self.confirm_button.config(state="disabled")
-        self.selection_label.config(text=f"{len(self.selected_pixels)} pixels confirmed. Now color only these.")
+    def toggle_confirm(self):
+        if self.mode == "selecting":
+            # Move to coloring mode
+            if len(self.selected_pixels) == 0:
+                self.selection_label.config(text="Select at least one pixel before confirming.")
+                return
+            self.mode = "coloring"
+            self.selection_label.config(text=f"{len(self.selected_pixels)} pixels confirmed. Now color only these.")
+            self.confirm_button.config(text="Finish session")
+
+        elif self.mode == "coloring":
+            # Finish and reset to idle mode
+            self.mode = "idle"
+            self.selection_label.config(text="")
+            self.confirm_button.config(state="disabled", text="Confirm selection")
+            self.participate_button.config(state="normal")
+
+            # Reset grid visuals but keep colored pixels
+            for (r, c), frame in self.pixels.items():
+                if (r, c) in self.colored_pixels:
+                    frame.config(bg=self.colored_pixels[(r, c)])
+                else:
+                    frame.config(bg="white")
+
+            self.selected_pixels.clear()
 
 if __name__ == "__main__":
     app = PixelGrid(rows=20, cols=20, pixel_size=20)
