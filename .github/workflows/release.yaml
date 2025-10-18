@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.vscode/**'
+      - '.idea/**'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  hackathon-contracts-validate:
+    name: Run hackathon-contracts release
+    secrets: inherit
+    uses: ./.github/workflows/hackathon-contracts-ci.yaml
+
+  hackathon-contracts-release:
+    name: Run hackathon-contracts release
+    secrets: inherit
+    uses: ./.github/workflows/hackathon-contracts-cd.yaml
+    needs: hackathon-contracts-validate
+
+  hackathon-frontend-validate:
+    name: Run hackathon-frontend release
+    secrets: inherit
+    uses: ./.github/workflows/hackathon-frontend-ci.yaml
+
+  hackathon-frontend-release:
+    name: Run hackathon-frontend release
+    secrets: inherit
+    uses: ./.github/workflows/hackathon-frontend-cd.yaml
+    needs: hackathon-frontend-validate

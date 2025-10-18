@@ -1,0 +1,14 @@
+name: Pull Request validation
+
+on: [pull_request]
+
+
+jobs:
+  hackathon-contracts-ci:
+    name: Run hackathon-contracts validation
+    uses: ./.github/workflows/hackathon-contracts-ci.yaml
+
+  hackathon-frontend-ci:
+    name: Run hackathon-frontend validation
+    uses: ./.github/workflows/hackathon-frontend-ci.yaml
+
