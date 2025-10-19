@@ -47,7 +47,7 @@ def create_pixel_assets(rows=GRID_HEIGHT, cols=GRID_WIDTH):
     return created_assets
 
 
-def deploy() -> None:
+def deploy() -> dict:
     """
     AlgoKit-compatible deploy function.
     Will be called automatically via `algokit project deploy`.
@@ -56,15 +56,13 @@ def deploy() -> None:
     pixel_assets = create_pixel_assets()
 
     logger.info("=== Deployment complete ===")
+    return pixel_assets
 
 
 if __name__ == "__main__":
-    deploy()
-    # Launch UI separately when running directly
-    app = PixelGrid(rows=GRID_HEIGHT, cols=GRID_WIDTH, pixel_size=25)
+    pixel_assets = deploy()
+    app = PixelGrid(rows=GRID_HEIGHT, cols=GRID_WIDTH, pixel_size=25, pixel_assets=pixel_assets)
     app.mainloop()
-
-
 
 
 

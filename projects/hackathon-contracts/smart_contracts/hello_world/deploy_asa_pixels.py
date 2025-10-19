@@ -52,5 +52,5 @@ if __name__ == "__main__":
     pixel_assets = create_pixel_assets()
 
     logger.info("=== LAUNCHING PIXEL GRID UI ===")
-    app = PixelGrid(rows=GRID_HEIGHT, cols=GRID_WIDTH, pixel_size=25)
+    app = PixelGrid(rows=GRID_HEIGHT, cols=GRID_WIDTH, pixel_size=25, pixel_assets=pixel_assets)
     app.mainloop()
