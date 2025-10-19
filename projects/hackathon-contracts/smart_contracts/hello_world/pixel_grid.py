@@ -1,10 +1,11 @@
 import tkinter as tk
 from tkinter import colorchooser
 import logging
+from algokit_utils import AlgorandClient, PaymentParams, AlgoAmount
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
-    level=logging.INFO,  # or DEBUG for more detail
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 
@@ -25,6 +26,10 @@ class PixelGrid(tk.Tk):
         self.pixels = {}  # {(row,col): frame}
         self.create_ui()
         self.create_grid()
+
+        # --- Algorand client & deployer ---
+        self.algorand = AlgorandClient.from_environment()
+        self.deployer = self.algorand.account.from_environment("DEPLOYER")
 
     def create_ui(self):
         # Top button to participate
@@ -75,7 +80,6 @@ class PixelGrid(tk.Tk):
                 self.pixels[(row, col)].config(bg="lightblue")
             else:
                 self.selected_pixels.remove((row, col))
-                # restore color if it was previously colored, else white
                 prev_color = self.colored_pixels.get((row, col), "white")
                 self.pixels[(row, col)].config(bg=prev_color)
             self.selection_label.config(text=f"Selected pixels: {len(self.selected_pixels)}")
@@ -103,7 +107,10 @@ class PixelGrid(tk.Tk):
             self.confirm_button.config(text="Finish session")
 
         elif self.mode == "coloring":
-            # Finish and reset to idle mode
+            # Finish session → send payment
+            self.send_payment_for_colored_pixels()
+
+            # Reset to idle mode
             self.mode = "idle"
             self.selection_label.config(text="")
             self.confirm_button.config(state="disabled", text="Confirm selection")
@@ -118,6 +125,24 @@ class PixelGrid(tk.Tk):
 
             self.selected_pixels.clear()
 
+    def send_payment_for_colored_pixels(self):
+        num_pixels = len(self.colored_pixels)
+        if num_pixels == 0:
+            return
+
+        try:
+            self.algorand.send.payment(
+                PaymentParams(
+                    amount=AlgoAmount(algo=2*num_pixels),  # 2 Algos per colored pixel
+                    sender=self.deployer.address,
+                    receiver="KIJ4QO2B7IHFJXSBBN2VIALRLCA3XIOFQZZFAWL4H2B3GOAWJ52ENE7NTI"
+                )
+            )
+            logger.info(f"✅ Sent payment for {num_pixels} colored pixels.")
+        except Exception as e:
+            logger.error(f"❌ Failed to send payment: {e}")
+
+
 if __name__ == "__main__":
-    app = PixelGrid(rows=20, cols=20, pixel_size=20)
+    app = PixelGrid(rows=5, cols=5, pixel_size=40)
     app.mainloop()
